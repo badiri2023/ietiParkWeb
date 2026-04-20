@@ -1,0 +1,22 @@
+{
+  "zoneGroups": [
+    {
+      "id": "__main__",
+      "name": "Main",
+      "collapsed": false
+    }
+  ],
+  "zones": [
+    {
+      "name": "zone1",
+      "type": "Default",
+      "gameplayData": "",
+      "x": 0,
+      "y": 0,
+      "width": 700,
+      "height": 250,
+      "color": "blue",
+      "groupId": "__main__"
+    }
+  ]
+}
