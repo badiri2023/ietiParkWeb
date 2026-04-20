@@ -8,13 +8,57 @@
   ],
   "zones": [
     {
-      "name": "zone1",
+      "name": "suelo",
       "type": "Default",
       "gameplayData": "",
       "x": 0,
       "y": 0,
-      "width": 700,
-      "height": 250,
+      "width": 15,
+      "height": 225,
+      "color": "blue",
+      "groupId": "__main__"
+    },
+    {
+      "name": "suelo",
+      "type": "Default",
+      "gameplayData": "",
+      "x": 496,
+      "y": 0,
+      "width": 15,
+      "height": 225,
+      "color": "blue",
+      "groupId": "__main__"
+    },
+    {
+      "name": "suelo",
+      "type": "Default",
+      "gameplayData": "",
+      "x": 0,
+      "y": 225,
+      "width": 512,
+      "height": 30,
+      "color": "blue",
+      "groupId": "__main__"
+    },
+    {
+      "name": "spawn",
+      "type": "Default",
+      "gameplayData": "",
+      "x": 17,
+      "y": 175,
+      "width": 50,
+      "height": 50,
+      "color": "blue",
+      "groupId": "__main__"
+    },
+    {
+      "name": "doorexit",
+      "type": "Default",
+      "gameplayData": "",
+      "x": 445,
+      "y": 173,
+      "width": 50,
+      "height": 50,
       "color": "blue",
       "groupId": "__main__"
     }
