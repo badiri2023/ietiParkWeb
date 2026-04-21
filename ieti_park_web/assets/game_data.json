@@ -32,19 +32,6 @@
           "visible": true,
           "groupId": "__main__",
           "tileMapFile": "tilemaps/level_000_layer_001.json"
-        },
-        {
-          "name": "background",
-          "gameplayData": "",
-          "x": 52,
-          "y": -1,
-          "depth": 0.0,
-          "tilesSheetFile": "media/Fondo_PNG.png",
-          "tilesWidth": 400,
-          "tilesHeight": 320,
-          "visible": true,
-          "groupId": "__main__",
-          "tileMapFile": "tilemaps/level_000_layer_002.json"
         }
       ],
       "layerGroups": [

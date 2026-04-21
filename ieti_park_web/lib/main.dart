@@ -1,5 +1,7 @@
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'game_loader.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,6 +12,7 @@ class MyApp extends StatelessWidget {
 
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'IETI Park',
       theme: ThemeData(
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
@@ -29,9 +32,23 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final WebSocketChannel channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
+  late WebSocketChannel channel;
+  late Future<GameLevelData> _gameDataFuture;
   final double gameWidth = 1120;
   final double gameHeight = 630;
+
+  @override
+  void initState() {
+    super.initState();
+    channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
+    _gameDataFuture = GameDataLoader.loadLevel('level_000');
+  }
+
+  @override
+  void dispose() {
+    channel.sink.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,33 +56,37 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         backgroundColor: Colors.blueGrey,
         title: Center(
-            child: Text(widget.title, 
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)
-            ),
-          ),
+          child: Text(widget.title,
+              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+        ),
       ),
       body: Center(
         child: Container(
           width: gameWidth,
           height: gameHeight,
           decoration: BoxDecoration(
-              border: Border.all(color: Colors.black, width: 2),
-            ),
-          child: StreamBuilder(
-            stream: channel.stream,
+            border: Border.all(color: Colors.black, width: 2),
+          ),
+          child: FutureBuilder<GameLevelData>(
+            future: _gameDataFuture,
             builder: (context, snapshot) {
               if (snapshot.hasData) {
-                final data = snapshot.data;
-                // Debug
-                print('===== Received data =====\n$data\n========================='); 
-                return CustomPaint(
-                  painter:
-                      GamePainter(data),
+                final gameData = snapshot.data!;
+                return StreamBuilder(
+                  stream: channel.stream,
+                  builder: (context, streamSnapshot) {
+                    return CustomPaint(
+                      painter: GamePainter(gameData, streamSnapshot.data),
+                      size: Size(gameWidth, gameHeight),
+                    );
+                  },
                 );
               } else if (snapshot.hasError) {
-                return Text('Error: ${snapshot.error}');
+                return Center(
+                  child: Text('Error loading game data: ${snapshot.error}'),
+                );
               } else {
-                return CircularProgressIndicator();
+                return const Center(child: CircularProgressIndicator());
               }
             },
           ),
@@ -76,18 +97,77 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class GamePainter extends CustomPainter {
-  final dynamic data;
+  final GameLevelData gameData;
+  final dynamic serverData;
 
-  GamePainter(this.data);
+  GamePainter(this.gameData, this.serverData);
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw the game elements based on the received data
+    // Draw background color
+    final backgroundColor = _hexToColor(gameData.backgroundColorHex);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()..color = backgroundColor,
+    );
 
+    // Draw each layer
+    for (final layer in gameData.layers) {
+      if (layer.visible && layer.tileSheetImage != null) {
+        _drawLayer(canvas, layer, size);
+      }
+    }
+
+    // TODO: Draw player characters from serverData
+  }
+
+  void _drawLayer(Canvas canvas, GameLayer layer, Size canvasSize) {
+    if (layer.tileSheetImage == null) return;
+
+    final tileSheetImage = layer.tileSheetImage!;
+    final tileWidth = layer.tilesWidth;
+    final tileHeight = layer.tilesHeight;
+    final scale = canvasSize.width / (layer.tileMap[0].length * tileWidth);
+
+    // Draw all tiles in the tilemap
+    for (int row = 0; row < layer.tileMap.length; row++) {
+      for (int col = 0; col < layer.tileMap[row].length; col++) {
+        final tileIndex = layer.tileMap[row][col];
+
+        if (tileIndex >= 0) {
+          // Calculate source position in tileset
+          final tilesPerRow = tileSheetImage.width ~/ tileWidth;
+          final srcX = (tileIndex % tilesPerRow) * tileWidth;
+          final srcY = (tileIndex ~/ tilesPerRow) * tileHeight;
+
+          // Calculate destination position
+          final dstX = (layer.x + col * tileWidth) * scale;
+          final dstY = (layer.y + row * tileHeight) * scale;
+
+          // Draw tile
+          canvas.drawImageRect(
+            tileSheetImage,
+            Rect.fromLTWH(srcX.toDouble(), srcY.toDouble(),
+                tileWidth.toDouble(), tileHeight.toDouble()),
+            Rect.fromLTWH(dstX, dstY, tileWidth * scale, tileHeight * scale),
+            Paint(),
+          );
+        }
+      }
+    }
+  }
+
+  Color _hexToColor(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) {
+      buffer.write('ff'); // Add alpha channel
+      buffer.write(hexString.replaceFirst('#', ''));
+    }
+    return Color(int.parse(buffer.toString(), radix: 16));
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true; // Repaint whenever new data is received
+  bool shouldRepaint(GamePainter oldDelegate) {
+    return oldDelegate.serverData != serverData;
   }
 }
