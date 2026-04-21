@@ -32,7 +32,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late WebSocketChannel channel;
+  final WebSocketChannel channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
   late Future<GameLevelData> _gameDataFuture;
   final double gameWidth = 1120;
   final double gameHeight = 630;
@@ -40,7 +40,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
     _gameDataFuture = GameDataLoader.loadLevel('level_000');
   }
 
@@ -75,6 +74,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 return StreamBuilder(
                   stream: channel.stream,
                   builder: (context, streamSnapshot) {
+                    // Debug
+                    print("===== Server data =====\n${streamSnapshot.data}\n=======================");
                     return CustomPaint(
                       painter: GamePainter(gameData, streamSnapshot.data),
                       size: Size(gameWidth, gameHeight),
