@@ -1,5 +1,4 @@
-import 'dart:ui';
-
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -30,42 +29,65 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final WebSocketChannel channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
+  final double gameWidth = 1120;
+  final double gameHeight = 630;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        backgroundColor: Colors.blueGrey,
+        title: Center(
+            child: Text(widget.title, 
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)
+            ),
+          ),
       ),
       body: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 300,
-              height: 600,
-              decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black, width: 2),
-                ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Llista de jugadors connectats (falta)
-                ]
-              ),
+        child: Container(
+          width: gameWidth,
+          height: gameHeight,
+          decoration: BoxDecoration(
+              border: Border.all(color: Colors.black, width: 2),
             ),
-            Container(
-              width: 900,
-              height: 600,
-              decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black, width: 2),
-                ),
-              child: CustomPaint(),
-            ),
-          ],
+          child: StreamBuilder(
+            stream: channel.stream,
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                final data = snapshot.data;
+                // Debug
+                print('===== Received data =====\n$data\n========================='); 
+                return CustomPaint(
+                  painter:
+                      GamePainter(data),
+                );
+              } else if (snapshot.hasError) {
+                return Text('Error: ${snapshot.error}');
+              } else {
+                return CircularProgressIndicator();
+              }
+            },
+          ),
         ),
       ),
     );
+  }
+}
+
+class GamePainter extends CustomPainter {
+  final dynamic data;
+
+  GamePainter(this.data);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Draw the game elements based on the received data
+
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true; // Repaint whenever new data is received
   }
 }
