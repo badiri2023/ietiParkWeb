@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -32,15 +34,58 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final WebSocketChannel channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
+  late WebSocketChannel channel;
   late Future<GameLevelData> _gameDataFuture;
   final double gameWidth = 1120;
   final double gameHeight = 630;
+  dynamic _worldData;
 
   @override
   void initState() {
     super.initState();
+    _initializeConnection();
     _gameDataFuture = GameDataLoader.loadLevel('level_000');
+  }
+
+  void _initializeConnection() {
+    channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
+    //channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443')); 
+    
+    // Listen to stream immediately
+    channel.stream.listen(
+      (data) {
+        try {
+          final message = jsonDecode(data);
+          if (message['type'] == 'WORLD_INIT') {
+            setState(() {
+              _worldData = message['data'];
+            });
+            print("✓ WORLD_INIT received: ${_worldData}");
+          } else {
+            print("📨 Server message type: ${message['type']} \n ${message['data']}");
+            setState(() {
+              _worldData = message;
+            });
+          }
+        } catch (e) {
+          print("❌ Error parsing server data: $e");
+        }
+      },
+      onError: (error) {
+        print("❌ WebSocket error: $error");
+      },
+      onDone: () {
+        print("⚠️ WebSocket connection closed");
+      },
+    );
+    
+    // Send JOIN_VIEWER after a brief delay to ensure connection is ready
+    Future.delayed(const Duration(milliseconds: 100), () {
+      channel.sink.add(jsonEncode({
+        'type': 'JOIN_VIEWER',
+      }));
+      print("📤 Sent JOIN_VIEWER to server");
+    });
   }
 
   @override
@@ -71,16 +116,9 @@ class _MyHomePageState extends State<MyHomePage> {
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 final gameData = snapshot.data!;
-                return StreamBuilder(
-                  stream: channel.stream,
-                  builder: (context, streamSnapshot) {
-                    // Debug
-                    print("===== Server data =====\n${streamSnapshot.data}\n=======================");
-                    return CustomPaint(
-                      painter: GamePainter(gameData, streamSnapshot.data),
-                      size: Size(gameWidth, gameHeight),
-                    );
-                  },
+                return CustomPaint(
+                  painter: GamePainter(gameData, _worldData),
+                  size: Size(gameWidth, gameHeight),
                 );
               } else if (snapshot.hasError) {
                 return Center(
