@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
+import 'colors.dart';
 
 class GameLayer {
   final String name;
@@ -25,7 +26,6 @@ class GameLayer {
     required this.visible,
   });
 }
-
 class GameLevelData {
   final String name;
   final List<GameLayer> layers;
@@ -41,7 +41,6 @@ class GameLevelData {
     required this.backgroundColorHex,
   });
 }
-
 class GameDataLoader {
   static Future<GameLevelData> loadLevel(String levelName) async {
     // Load game data JSON
@@ -93,5 +92,58 @@ class GameDataLoader {
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final frame = await codec.getNextFrame();
     return frame.image;
+  }
+}
+
+
+class DoorData {
+  int x; int y;
+  int width; int height;
+  
+  DoorData(dynamic doorData)
+  : x = doorData['x'],
+    y = doorData['y'],
+    width = doorData['width'],
+    height = doorData['height'];
+}
+class WorldInit {
+  int width;
+  int height;
+  DoorData door;
+
+  WorldInit(dynamic worldInit)
+  : width = worldInit['width'],
+    height = worldInit['height'],
+    door = DoorData(worldInit['door']);
+}
+class WorldInitLoader {
+
+}
+
+class PlayerState {
+  String id;
+  int x; int y;
+  String nickname;
+  String color;
+
+  PlayerState(dynamic playerState)
+  : id = playerState['id'],
+    x = playerState['x'],
+    y = playerState['y'],
+    nickname = playerState['nickname'],
+    color = playerState['color'];
+}
+class StateUpdate {
+  List<PlayerState> players;
+
+  StateUpdate(dynamic stateUpdate)
+  : players = [
+      for (dynamic playerState in stateUpdate['players'])
+        PlayerState(playerState)
+    ];
+}
+class StateUpdateLoader {
+  Future<void> loadStateUpdate() {
+    return null;
   }
 }

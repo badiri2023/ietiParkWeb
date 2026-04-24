@@ -48,8 +48,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _initializeConnection() {
-    channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
-    //channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443')); 
+    //channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
+    channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443')); 
     
     // Listen to stream immediately
     channel.stream.listen(
@@ -157,7 +157,13 @@ class GamePainter extends CustomPainter {
       }
     }
 
-    // TODO: Draw player characters from serverData
+    // Draw player characters from serverData
+    int width = serverData['width'];
+    int height = serverData['height'];
+
+
+    // Draw door from serverData
+    Map<String, int> door = serverData['door'];
   }
 
   void _drawLayer(Canvas canvas, GameLayer layer, Size canvasSize) {
