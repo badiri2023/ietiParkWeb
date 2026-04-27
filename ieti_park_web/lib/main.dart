@@ -4,6 +4,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'game_loader.dart';
+import 'game_painter.dart';
 
 void main() {
   runApp(const MyApp());
@@ -44,7 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _initializeConnection();
-    _gameDataFuture = GameDataLoader.loadLevel('level_000');
+    _gameDataFuture = Loader.loadLevel('level_000');
   }
 
   void _initializeConnection() {
@@ -132,117 +133,5 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
-  }
-}
-
-class GamePainter extends CustomPainter {
-  final GameLevelData gameData;
-  final dynamic serverData;
-  late WorldInit worldInitData;
-  late StateUpdate stateUpdateData;
-
-  GamePainter(this.gameData, this.serverData);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Draw background color
-    final backgroundColor = _hexToColor(gameData.backgroundColorHex);
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = backgroundColor,
-    );
-
-    // Draw each layer
-    for (final layer in gameData.layers) {
-      if (layer.visible && layer.tileSheetImage != null) {
-        _drawLayer(canvas, layer, size);
-      }
-    }
-
-    // Handle different message types
-    if (serverData != null && serverData is Map) {
-      if (serverData['type'] == 'WORLD_INIT') {
-        worldInitData = WorldInit(serverData['data']);
-        _drawDoor(canvas, size, null);
-      } else if (serverData['type'] == 'STATE_UPDATE') {
-        stateUpdateData = StateUpdate(serverData['data']);
-        _drawPlayers(canvas, size);
-      }
-    }
-
-  }
-
-  void _drawLayer(Canvas canvas, GameLayer layer, Size canvasSize) {
-    if (layer.tileSheetImage == null) return;
-
-    final tileSheetImage = layer.tileSheetImage!;
-    final tileWidth = layer.tilesWidth;
-    final tileHeight = layer.tilesHeight;
-    final scale = canvasSize.width / (layer.tileMap[0].length * tileWidth);
-
-    // Draw all tiles in the tilemap
-    for (int row = 0; row < layer.tileMap.length; row++) {
-      for (int col = 0; col < layer.tileMap[row].length; col++) {
-        final tileIndex = layer.tileMap[row][col];
-
-        if (tileIndex >= 0) {
-          // Calculate source position in tileset
-          final tilesPerRow = tileSheetImage.width ~/ tileWidth;
-          final srcX = (tileIndex % tilesPerRow) * tileWidth;
-          final srcY = (tileIndex ~/ tilesPerRow) * tileHeight;
-
-          // Calculate destination position
-          final dstX = (layer.x + col * tileWidth) * scale;
-          final dstY = (layer.y + row * tileHeight) * scale;
-
-          // Draw tile
-          canvas.drawImageRect(
-            tileSheetImage,
-            Rect.fromLTWH(srcX.toDouble(), srcY.toDouble(),
-                tileWidth.toDouble(), tileHeight.toDouble()),
-            Rect.fromLTWH(dstX, dstY, tileWidth * scale, tileHeight * scale),
-            Paint(),
-          );
-        }
-      }
-    }
-  }
-
-  Color _hexToColor(String hexString) {
-    final buffer = StringBuffer();
-    if (hexString.length == 6 || hexString.length == 7) {
-      buffer.write('ff'); // Add alpha channel
-      buffer.write(hexString.replaceFirst('#', ''));
-    }
-    return Color(int.parse(buffer.toString(), radix: 16));
-  }
-
-  void _drawDoor(Canvas canvas, Size canvasSize, int? animationFrame) {
-    final scale = canvasSize.width / worldInitData.width;
-
-    DoorData door = worldInitData.door;
-    final x = door.x; final y = door.y;
-    final width = door.width;
-    final height = door.height;
-    final doorImage = door.doorSpritesheetImage!;
-    final spriteWidth = door.spriteWidth;
-
-    // draw the door closed (first sprite)
-    if (animationFrame == null) {
-      canvas.drawImageRect(
-        doorImage,
-        Rect.zero,
-        Rect.fromLTWH(x*scale, y*scale, width*scale, height*scale),
-        Paint()
-      );
-    }
-  }
-  void _drawPlayers(Canvas canvas, Size canvasSize) {
-    final scale = canvasSize.width / worldInitData.width;
-  }
-
-  @override
-  bool shouldRepaint(GamePainter oldDelegate) {
-    return oldDelegate.serverData != serverData;
   }
 }

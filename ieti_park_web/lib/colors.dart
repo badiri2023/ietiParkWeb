@@ -1,10 +1,10 @@
 List<String> colors = [
-  "Blanco",
-  "Negro",
-  "Amarillo"
-  "Azul"
-  "Verde",
-  "Rojo",
-  "Turquesa",
-  "Violeta"
+  "blanco",
+  "negro",
+  "amarillo"
+  "azul"
+  "verde",
+  "rojo",
+  "turquesa",
+  "violeta"
 ];

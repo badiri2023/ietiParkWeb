@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'colors.dart';
 
@@ -41,7 +42,70 @@ class GameLevelData {
     required this.backgroundColorHex,
   });
 }
-class GameDataLoader {
+
+class DoorData {
+  int x; int y;
+  int width; int height;
+  String doorSpritesheetFile;
+  double spriteWidth; double spriteHeight;
+  ui.Image? doorSpritesheetImage;
+  
+  DoorData(dynamic doorData)
+  : x = doorData['x'],
+    y = doorData['y'],
+    width = doorData['width'],
+    height = doorData['height'],
+    doorSpritesheetFile = "media/door.png",
+    spriteWidth = 267,
+    spriteHeight = 335;
+}
+class WorldInit {
+  int width;
+  int height;
+  DoorData door;
+
+  WorldInit(dynamic worldInit)
+  : width = worldInit['width'],
+    height = worldInit['height'],
+    door = DoorData(worldInit['door']);
+}
+
+class PlayerState {
+  String id;
+  int x; int y;
+  String nickname;
+  String color;
+  late String imageFile;
+  double spriteWidth; double spriteHeight;
+  ui.Image? image;
+
+  PlayerState(dynamic playerState)
+  : id = playerState['id'],
+    x = playerState['x'],
+    y = playerState['y'],
+    nickname = playerState['nickname'],
+    color = playerState['color'],
+    spriteWidth = 112,
+    spriteHeight = 186 {
+      for (int i = 0; i < colors.length; i++) {
+        if (color == colors[i]) {
+          imageFile = "media/skeleton_color${i+1}.png";
+        }
+      }
+    }
+}
+class StateUpdate {
+  List<PlayerState> players;
+
+  StateUpdate(dynamic stateUpdate)
+  : players = [
+      for (dynamic playerState in stateUpdate['players'])
+        PlayerState(playerState)
+    ];
+}
+
+
+class Loader {
   static Future<GameLevelData> loadLevel(String levelName) async {
     // Load game data JSON
     final gameDataJson = await rootBundle.loadString('assets/game_data.json');
@@ -87,47 +151,20 @@ class GameDataLoader {
     );
   }
 
-  static Future<ui.Image> _loadImage(String assetPath) async {
-    final data = await rootBundle.load(assetPath);
-    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-    final frame = await codec.getNextFrame();
-    return frame.image;
-  }
-}
-
-
-class DoorData {
-  int x; int y;
-  int width; int height;
-  String doorSpritesheetFile;
-  int spriteWidth; //int spriteHeight;
-  ui.Image? doorSpritesheetImage;
-  
-  DoorData(dynamic doorData)
-  : x = doorData['x'],
-    y = doorData['y'],
-    width = doorData['width'],
-    height = doorData['height'],
-    doorSpritesheetFile = "media/door.png",
-    spriteWidth = 267;
-    //spriteHeight = 335;
-}
-class WorldInit {
-  int width;
-  int height;
-  DoorData door;
-
-  WorldInit(dynamic worldInit)
-  : width = worldInit['width'],
-    height = worldInit['height'],
-    door = DoorData(worldInit['door']);
-}
-class WorldInitLoader {
   static Future<WorldInit> loadWorldInit(dynamic data) async {
     WorldInit worldInit = WorldInit(data);
     worldInit.door.doorSpritesheetImage = await _loadImage("assets/${worldInit.door.doorSpritesheetFile}");
     return worldInit;
   }
+
+  static Future<StateUpdate> loadStateUpdate(dynamic data) async {
+    StateUpdate stateUpdate = StateUpdate(data);
+    for (PlayerState player in stateUpdate.players) {
+      player.image = await _loadImage("assets/${player.imageFile}");
+    }
+    return stateUpdate;
+  }
+
   static Future<ui.Image> _loadImage(String assetPath) async {
     final data = await rootBundle.load(assetPath);
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
@@ -136,25 +173,3 @@ class WorldInitLoader {
   }
 }
 
-class PlayerState {
-  String id;
-  int x; int y;
-  String nickname;
-  String color;
-
-  PlayerState(dynamic playerState)
-  : id = playerState['id'],
-    x = playerState['x'],
-    y = playerState['y'],
-    nickname = playerState['nickname'],
-    color = playerState['color'];
-}
-class StateUpdate {
-  List<PlayerState> players;
-
-  StateUpdate(dynamic stateUpdate)
-  : players = [
-      for (dynamic playerState in stateUpdate['players'])
-        PlayerState(playerState)
-    ];
-}
