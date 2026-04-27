@@ -58,9 +58,9 @@ class _MyHomePageState extends State<MyHomePage> {
           final message = jsonDecode(data);
           if (message['type'] == 'WORLD_INIT') {
             setState(() {
-              _worldData = message['data'];
+              _worldData = message;
             });
-            print("✓ WORLD_INIT received: ${_worldData}");
+            print("✓ WORLD_INIT received: ${message['data']}");
           } else {
             print("📨 Server message type: ${message['type']} \n ${message['data']}");
             setState(() {
@@ -138,6 +138,8 @@ class _MyHomePageState extends State<MyHomePage> {
 class GamePainter extends CustomPainter {
   final GameLevelData gameData;
   final dynamic serverData;
+  late WorldInit worldInitData;
+  late StateUpdate stateUpdateData;
 
   GamePainter(this.gameData, this.serverData);
 
@@ -157,13 +159,17 @@ class GamePainter extends CustomPainter {
       }
     }
 
-    // Draw player characters from serverData
-    int width = serverData['width'];
-    int height = serverData['height'];
+    // Handle different message types
+    if (serverData != null && serverData is Map) {
+      if (serverData['type'] == 'WORLD_INIT') {
+        worldInitData = WorldInit(serverData['data']);
+        _drawDoor(canvas, size, null);
+      } else if (serverData['type'] == 'STATE_UPDATE') {
+        stateUpdateData = StateUpdate(serverData['data']);
+        _drawPlayers(canvas, size);
+      }
+    }
 
-
-    // Draw door from serverData
-    Map<String, int> door = serverData['door'];
   }
 
   void _drawLayer(Canvas canvas, GameLayer layer, Size canvasSize) {
@@ -209,6 +215,30 @@ class GamePainter extends CustomPainter {
       buffer.write(hexString.replaceFirst('#', ''));
     }
     return Color(int.parse(buffer.toString(), radix: 16));
+  }
+
+  void _drawDoor(Canvas canvas, Size canvasSize, int? animationFrame) {
+    final scale = canvasSize.width / worldInitData.width;
+
+    DoorData door = worldInitData.door;
+    final x = door.x; final y = door.y;
+    final width = door.width;
+    final height = door.height;
+    final doorImage = door.doorSpritesheetImage!;
+    final spriteWidth = door.spriteWidth;
+
+    // draw the door closed (first sprite)
+    if (animationFrame == null) {
+      canvas.drawImageRect(
+        doorImage,
+        Rect.zero,
+        Rect.fromLTWH(x*scale, y*scale, width*scale, height*scale),
+        Paint()
+      );
+    }
+  }
+  void _drawPlayers(Canvas canvas, Size canvasSize) {
+    final scale = canvasSize.width / worldInitData.width;
   }
 
   @override

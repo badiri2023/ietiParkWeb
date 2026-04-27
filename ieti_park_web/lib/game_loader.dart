@@ -99,12 +99,18 @@ class GameDataLoader {
 class DoorData {
   int x; int y;
   int width; int height;
+  String doorSpritesheetFile;
+  int spriteWidth; //int spriteHeight;
+  ui.Image? doorSpritesheetImage;
   
   DoorData(dynamic doorData)
   : x = doorData['x'],
     y = doorData['y'],
     width = doorData['width'],
-    height = doorData['height'];
+    height = doorData['height'],
+    doorSpritesheetFile = "media/door.png",
+    spriteWidth = 267;
+    //spriteHeight = 335;
 }
 class WorldInit {
   int width;
@@ -117,7 +123,17 @@ class WorldInit {
     door = DoorData(worldInit['door']);
 }
 class WorldInitLoader {
-
+  static Future<WorldInit> loadWorldInit(dynamic data) async {
+    WorldInit worldInit = WorldInit(data);
+    worldInit.door.doorSpritesheetImage = await _loadImage("assets/${worldInit.door.doorSpritesheetFile}");
+    return worldInit;
+  }
+  static Future<ui.Image> _loadImage(String assetPath) async {
+    final data = await rootBundle.load(assetPath);
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  }
 }
 
 class PlayerState {
@@ -141,9 +157,4 @@ class StateUpdate {
       for (dynamic playerState in stateUpdate['players'])
         PlayerState(playerState)
     ];
-}
-class StateUpdateLoader {
-  Future<void> loadStateUpdate() {
-    return null;
-  }
 }
