@@ -4,14 +4,14 @@ import 'game_loader.dart';
 
 class GamePainter extends CustomPainter {
   final GameLevelData gameData;
-  final dynamic serverData;
-  late WorldInit worldInitData;
-  late StateUpdate stateUpdateData;
+  final WorldInit? worldInitData;
+  final StateUpdate? stateUpdateData;
+  late double scale;
 
-  GamePainter(this.gameData, this.serverData);
+  GamePainter(this.gameData, this.worldInitData, this.stateUpdateData);
 
   @override
-  void paint(Canvas canvas, Size size) async {
+  void paint(Canvas canvas, Size size) {
     // Draw background color
     final backgroundColor = _hexToColor(gameData.backgroundColorHex);
     canvas.drawRect(
@@ -26,13 +26,12 @@ class GamePainter extends CustomPainter {
       }
     }
 
-    // Handle server messages
-    if (serverData != null && serverData is Map) {
-      if (serverData['type'] == 'WORLD_INIT') {
-        worldInitData = await Loader.loadWorldInit(serverData['data']);
-        _drawDoor(canvas, size, null);
-      } else if (serverData['type'] == 'STATE_UPDATE') {
-        stateUpdateData = await Loader.loadStateUpdate(serverData['data']);
+    // Handle server messages - only draw if data is initialized
+    if (worldInitData != null) {
+      _drawDoor(canvas, size, null);
+      _drawKey(canvas, size, worldInitData!);
+      
+      if (stateUpdateData != null) {
         _drawPlayers(canvas, size, null, null);
       }
     }
@@ -85,44 +84,39 @@ class GamePainter extends CustomPainter {
   }
 
   void _drawDoor(Canvas canvas, Size canvasSize, int? animationFrame) {
-    final scale = canvasSize.width / worldInitData.width;
-
-    DoorData door = worldInitData.door;
-    final x = door.x; final y = door.y;
-    final width = door.width;
-    final height = door.height;
-    final doorImage = door.doorSpritesheetImage!;
-    final spriteWidth = door.spriteWidth;
-    final spriteHeight = door.spriteHeight;
+    scale = canvasSize.width / worldInitData!.width;
+    final doorScale = 0.2;
+    DoorData door = worldInitData!.door;
 
     // draw the door closed (first sprite)
     if (animationFrame == null) {
       canvas.drawImageRect(
-        doorImage,
-        Rect.fromLTWH(0, 0, spriteWidth, spriteHeight),
-        Rect.fromLTWH(x*scale, y*scale, width*scale, height*scale),
+        door.image!,
+        Rect.fromLTWH(0, 0, door.width, door.height),
+        Rect.fromLTWH(
+          door.x*scale, door.y*scale, 
+          door.width*scale*doorScale, door.height*scale*doorScale
+        ),
         Paint()
       );
     } else {
       // TODO animar
     }
   }
+  
   void _drawPlayers(Canvas canvas, Size canvasSize, int? animation, int? animationFrame) {
-    final scale = canvasSize.width / worldInitData.width;
-
-    for (PlayerState player in stateUpdateData.players) {
-      final x = player.x; final y = player.y;
-      final nickname = player.nickname;
-      final spriteWidth = player.spriteWidth;
-      final spriteHeight = player.spriteHeight;
-      final image = player.image!;
-
+    scale = canvasSize.width / worldInitData!.width;
+    
+    for (PlayerState player in stateUpdateData!.players) {
       // draw player standing
       if (animation == null) {
         canvas.drawImageRect(
-          image,
-          Rect.fromLTWH(0, 0, spriteWidth, spriteHeight),
-          Rect.fromLTWH(x*scale, y*scale, spriteWidth*scale, spriteHeight*scale),
+          player.image!,
+          Rect.fromLTWH(0, 0, player.width, player.height),
+          Rect.fromLTWH(
+            player.x*scale, player.y*scale, 
+            player.width*scale, player.height*scale
+          ),
           Paint()
         );
       } else {
@@ -131,8 +125,25 @@ class GamePainter extends CustomPainter {
     }
   }
 
+  void _drawKey(Canvas canvas, Size canvasSize, dynamic data) {
+    scale = canvasSize.width / worldInitData!.width;
+    KeyData key = data.key;
+    
+    canvas.drawImageRect(
+      key.image!,
+      Rect.fromLTWH(0, 0, key.width, key.height),
+      Rect.fromLTWH(
+        key.x*scale, key.y*scale,
+        key.width*scale, key.height*scale
+      ),
+      Paint()
+    );
+  }
+
   @override
   bool shouldRepaint(GamePainter oldDelegate) {
-    return oldDelegate.serverData != serverData;
+    // Repaint if data has been initialized or changed
+    return oldDelegate.worldInitData != worldInitData || 
+           oldDelegate.stateUpdateData != stateUpdateData;
   }
 }

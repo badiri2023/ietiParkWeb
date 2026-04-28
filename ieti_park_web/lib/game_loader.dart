@@ -45,29 +45,45 @@ class GameLevelData {
 
 class DoorData {
   int x; int y;
-  int width; int height;
-  String doorSpritesheetFile;
-  double spriteWidth; double spriteHeight;
-  ui.Image? doorSpritesheetImage;
+  String imageFile;
+  double width; double height;
+  ui.Image? image;
   
   DoorData(dynamic doorData)
   : x = doorData['x'],
     y = doorData['y'],
-    width = doorData['width'],
-    height = doorData['height'],
-    doorSpritesheetFile = "media/door.png",
-    spriteWidth = 267,
-    spriteHeight = 335;
+    imageFile = "media/door.png",
+    width = 267,
+    height = 335;
+}
+class KeyData {
+  int x; int y; 
+  bool collected;
+  String? holderId;
+  String imageFile;
+  double width; double height;
+  ui.Image? image;
+
+  KeyData(dynamic keyData)
+  : x = keyData['x'],
+    y = keyData['y'],
+    collected = keyData['collected'],
+    holderId = keyData['holderId'],
+    imageFile = "media/skeleton_key.png",
+    width = 32,
+    height = 32;
 }
 class WorldInit {
   int width;
   int height;
   DoorData door;
+  KeyData key;
 
   WorldInit(dynamic worldInit)
   : width = worldInit['width'],
     height = worldInit['height'],
-    door = DoorData(worldInit['door']);
+    door = DoorData(worldInit['door']),
+    key = KeyData(worldInit['key']);
 }
 
 class PlayerState {
@@ -76,7 +92,7 @@ class PlayerState {
   String nickname;
   String color;
   late String imageFile;
-  double spriteWidth; double spriteHeight;
+  double width; double height;
   ui.Image? image;
 
   PlayerState(dynamic playerState)
@@ -85,8 +101,8 @@ class PlayerState {
     y = playerState['y'],
     nickname = playerState['nickname'],
     color = playerState['color'],
-    spriteWidth = 112,
-    spriteHeight = 186 {
+    width = 112,
+    height = 186 {
       for (int i = 0; i < colors.length; i++) {
         if (color == colors[i]) {
           imageFile = "media/skeleton_color${i+1}.png";
@@ -96,12 +112,14 @@ class PlayerState {
 }
 class StateUpdate {
   List<PlayerState> players;
+  KeyData key;
 
   StateUpdate(dynamic stateUpdate)
   : players = [
       for (dynamic playerState in stateUpdate['players'])
         PlayerState(playerState)
-    ];
+    ],
+    key = KeyData(stateUpdate['key']);
 }
 
 
@@ -153,7 +171,8 @@ class Loader {
 
   static Future<WorldInit> loadWorldInit(dynamic data) async {
     WorldInit worldInit = WorldInit(data);
-    worldInit.door.doorSpritesheetImage = await _loadImage("assets/${worldInit.door.doorSpritesheetFile}");
+    worldInit.door.image = await _loadImage("assets/${worldInit.door.imageFile}");
+    worldInit.key.image = await _loadImage("assets/${worldInit.key.imageFile}");
     return worldInit;
   }
 
@@ -162,6 +181,7 @@ class Loader {
     for (PlayerState player in stateUpdate.players) {
       player.image = await _loadImage("assets/${player.imageFile}");
     }
+    stateUpdate.key.image = await _loadImage("assets/${stateUpdate.key.imageFile}");
     return stateUpdate;
   }
 
