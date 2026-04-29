@@ -44,7 +44,7 @@ class GameLevelData {
 }
 
 class DoorData {
-  int x; int y;
+  double x; double y;
   String imageFile;
   double width; double height;
   ui.Image? image;
@@ -57,7 +57,7 @@ class DoorData {
     height = 335;
 }
 class KeyData {
-  int x; int y; 
+  double x; double y; 
   bool collected;
   String? holderId;
   String imageFile;
@@ -74,8 +74,8 @@ class KeyData {
     height = 32;
 }
 class WorldInit {
-  int width;
-  int height;
+  double width;
+  double height;
   DoorData door;
   KeyData key;
 
@@ -88,7 +88,7 @@ class WorldInit {
 
 class PlayerState {
   String id;
-  int x; int y;
+  double x; double y;
   String nickname;
   String color;
   late String imageFile;

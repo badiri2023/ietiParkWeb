@@ -85,7 +85,7 @@ class GamePainter extends CustomPainter {
 
   void _drawDoor(Canvas canvas, Size canvasSize, int? animationFrame) {
     scale = canvasSize.width / worldInitData!.width;
-    final doorScale = 0.2;
+    final doorScale = 0.4;
     DoorData door = worldInitData!.door;
 
     // draw the door closed (first sprite)

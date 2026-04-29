@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -51,8 +52,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _initializeConnection() {
-    channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
-    //channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443')); 
+    //channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
+    channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443')); 
     
     // Listen to stream immediately
     channel.stream.listen(
@@ -122,8 +123,10 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Column(
                 mainAxisAlignment: .center,
                 children: [
-                  Text("Baixa't l'app!", style: TextStyle(fontSize: 18)),
-                  Image.file(File("assets/media/skeleton_key.png")),
+                  Text("Baixa't l'app!\nQR:", style: TextStyle(fontSize: 18)),
+                  //QrImageView(
+                  //  data: ""
+                  //  )
                 ]
               ),
             ),
