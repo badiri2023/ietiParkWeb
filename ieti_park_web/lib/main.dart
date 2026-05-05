@@ -118,18 +118,18 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Row(
           mainAxisAlignment: .center,
           children: [
-            Padding(
-              padding: EdgeInsetsGeometry.all(10),
-              child: Column(
-                mainAxisAlignment: .center,
-                children: [
-                  Text("Baixa't l'app!\nQR:", style: TextStyle(fontSize: 18)),
-                  //QrImageView(
-                  //  data: ""
-                  //  )
-                ]
-              ),
-            ),
+            //Padding(
+            //  padding: EdgeInsetsGeometry.all(10),
+            //  child: Column(
+            //    mainAxisAlignment: .center,
+            //    children: [
+            //      Text("Baixa't l'app!\nQR:", style: TextStyle(fontSize: 18)),
+            //      //QrImageView(
+            //      //  data: ""
+            //      //  )
+            //    ]
+            //  ),
+            //),
             Container(
               width: gameWidth,
               height: gameHeight,

@@ -4,8 +4,8 @@ import 'game_loader.dart';
 
 class GamePainter extends CustomPainter {
   final GameLevelData gameData;
-  final WorldInit? worldInitData;
-  final StateUpdate? stateUpdateData;
+  WorldInit? worldInitData;
+  StateUpdate? stateUpdateData;
   late double scale;
 
   GamePainter(this.gameData, this.worldInitData, this.stateUpdateData);
@@ -30,10 +30,9 @@ class GamePainter extends CustomPainter {
     if (worldInitData != null) {
       _drawDoor(canvas, size, null);
       _drawKey(canvas, size, worldInitData!);
-      
-      if (stateUpdateData != null) {
-        _drawPlayers(canvas, size, null, null);
-      }
+    }
+    if (stateUpdateData != null) {
+      _drawPlayers(canvas, size, null, null);
     }
 
   }
@@ -85,17 +84,20 @@ class GamePainter extends CustomPainter {
 
   void _drawDoor(Canvas canvas, Size canvasSize, int? animationFrame) {
     scale = canvasSize.width / worldInitData!.width;
-    final doorScale = 0.4;
+    int offsetX = 40;
+    int offsetY = 155;
+    double doorScaleX = 0.6;
+    double doorScaleY = 0.75; 
     DoorData door = worldInitData!.door;
 
     // draw the door closed (first sprite)
     if (animationFrame == null) {
       canvas.drawImageRect(
         door.image!,
-        Rect.fromLTWH(0, 0, door.width, door.height),
+        Rect.fromLTWH(0, 0, door.width.toDouble(), door.height.toDouble()),
         Rect.fromLTWH(
-          door.x*scale, door.y*scale, 
-          door.width*scale*doorScale, door.height*scale*doorScale
+          door.x*scale + offsetX, door.y*scale + offsetY, 
+          door.width*scale*doorScaleX, door.height*scale*doorScaleY
         ),
         Paint()
       );
@@ -112,7 +114,7 @@ class GamePainter extends CustomPainter {
       if (animation == null) {
         canvas.drawImageRect(
           player.image!,
-          Rect.fromLTWH(0, 0, player.width, player.height),
+          Rect.fromLTWH(0, 0, player.width.toDouble(), player.height.toDouble() ),
           Rect.fromLTWH(
             player.x*scale, player.y*scale, 
             player.width*scale, player.height*scale
@@ -131,7 +133,7 @@ class GamePainter extends CustomPainter {
     
     canvas.drawImageRect(
       key.image!,
-      Rect.fromLTWH(0, 0, key.width, key.height),
+      Rect.fromLTWH(0, 0, key.width.toDouble(), key.height.toDouble()),
       Rect.fromLTWH(
         key.x*scale, key.y*scale,
         key.width*scale, key.height*scale
