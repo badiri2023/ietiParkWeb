@@ -84,7 +84,7 @@ class GamePainter extends CustomPainter {
 
   void _drawDoor(Canvas canvas, Size canvasSize, int? animationFrame) {
     scale = canvasSize.width / worldInitData!.width;
-    int offsetX = 40;
+    int offsetX = -40;
     int offsetY = 155;
     double doorScaleX = 0.6;
     double doorScaleY = 0.75; 
@@ -144,8 +144,8 @@ class GamePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(GamePainter oldDelegate) {
-    // Repaint if data has been initialized or changed
-    return oldDelegate.worldInitData != worldInitData || 
-           oldDelegate.stateUpdateData != stateUpdateData;
+    // Always repaint since state data may have been updated
+    // (even if the reference is the same, the contents may have changed)
+    return true;
   }
 }
