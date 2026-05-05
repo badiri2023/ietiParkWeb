@@ -22,17 +22,6 @@
       "name": "suelo",
       "type": "Default",
       "gameplayData": "",
-      "x": 705,
-      "y": 321,
-      "width": 111,
-      "height": 30,
-      "color": "cyan",
-      "groupId": "__main__"
-    },
-    {
-      "name": "suelo",
-      "type": "Default",
-      "gameplayData": "",
       "x": 1410,
       "y": 0,
       "width": 29,
@@ -115,6 +104,28 @@
       "width": 47,
       "height": 33,
       "color": "cyan",
+      "groupId": "__main__"
+    },
+    {
+      "name": "plataforma",
+      "type": "plataforma",
+      "gameplayData": "",
+      "x": 657,
+      "y": 321,
+      "width": 162,
+      "height": 31,
+      "color": "purple",
+      "groupId": "__main__"
+    },
+    {
+      "name": "plataformaactivable",
+      "type": "plataformaactivable",
+      "gameplayData": "",
+      "x": 496,
+      "y": 321,
+      "width": 113,
+      "height": 30,
+      "color": "deepOrange",
       "groupId": "__main__"
     }
   ]

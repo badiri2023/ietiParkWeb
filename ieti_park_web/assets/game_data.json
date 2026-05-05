@@ -48,7 +48,7 @@
           "type": "player1",
           "animationId": "anim_1776697186675083",
           "x": 114,
-          "y": 390,
+          "y": 389,
           "width": 112,
           "height": 186,
           "imageFile": "media/skeleton_color1.png",
@@ -82,6 +82,21 @@
           "width": 32,
           "height": 32,
           "imageFile": "media/skeleton_key.png",
+          "flipX": false,
+          "flipY": false,
+          "depth": 0.0,
+          "groupId": "__main__"
+        },
+        {
+          "name": "player2",
+          "gameplayData": "",
+          "type": "player2",
+          "animationId": "anim_1776699907386002",
+          "x": 178,
+          "y": 388,
+          "width": 112,
+          "height": 186,
+          "imageFile": "media/skeleton_color8.png",
           "flipX": false,
           "flipY": false,
           "depth": 0.0,
@@ -136,9 +151,9 @@
       ],
       "sprites": [
         {
-          "name": "skeleton1",
+          "name": "player1",
           "gameplayData": "",
-          "type": "skeleton1",
+          "type": "player1",
           "animationId": "anim_1776697186675083",
           "x": 121,
           "y": 339,
@@ -204,14 +219,14 @@
         }
       ],
       "groupId": "__main__",
-      "viewportWidth": 400,
-      "viewportHeight": 200,
-      "viewportX": 2,
-      "viewportY": 256,
+      "viewportWidth": 320,
+      "viewportHeight": 180,
+      "viewportX": 0,
+      "viewportY": 0,
       "viewportAdaptation": "letterbox",
       "viewportInitialColor": "green",
       "viewportPreviewColor": "blue",
-      "backgroundColorHex": "#E1E1DC",
+      "backgroundColorHex": "#33335E",
       "depthSensitivity": 0.08,
       "zonesFile": "zones/level_001_zones.json",
       "pathsFile": "paths/level_001_paths.json"
@@ -383,6 +398,22 @@
     {
       "name": "palanca",
       "color": "indigo"
+    },
+    {
+      "name": "plataforma",
+      "color": "purple"
+    },
+    {
+      "name": "plataformaactivable",
+      "color": "deepOrange"
+    },
+    {
+      "name": "Category 9",
+      "color": "red"
+    },
+    {
+      "name": "Category 10",
+      "color": "red"
     }
   ],
   "animationsFile": "animations/animations.json"
