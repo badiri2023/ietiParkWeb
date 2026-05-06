@@ -1,195 +1,235 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'colors.dart';
+import 'package:flutter/material.dart';
 
-class GameLayer {
-  final String name;
-  final String tilesSheetFile;
-  final String tileMapFile;
-  final int tilesWidth;
-  final int tilesHeight;
-  final int x;
-  final int y;
-  final bool visible;
-  late List<List<int>> tileMap;
-  ui.Image? tileSheetImage;
+final Map<String, ui.Image> _imageCache = {};
 
-  GameLayer({
-    required this.name,
-    required this.tilesSheetFile,
-    required this.tileMapFile,
-    required this.tilesWidth,
-    required this.tilesHeight,
-    required this.x,
-    required this.y,
-    required this.visible,
-  });
-}
-class GameLevelData {
-  final String name;
-  final List<GameLayer> layers;
-  final int viewportWidth;
-  final int viewportHeight;
-  final String backgroundColorHex;
+class Loader {
+  static Future<ui.Image> _getOrLoadImage(String assetPath) async {
+    if (_imageCache.containsKey(assetPath)) return _imageCache[assetPath]!;
+    try {
+      final data = await rootBundle.load(assetPath);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      _imageCache[assetPath] = frame.image;
+      return frame.image;
+    } catch (e) {
+      print("❌ Error cargando imagen en assets: $assetPath");
+      rethrow;
+    }
+  }
 
-  GameLevelData({
-    required this.name,
-    required this.layers,
-    required this.viewportWidth,
-    required this.viewportHeight,
-    required this.backgroundColorHex,
-  });
-}
+  static Future<WorldData> loadWorldFromServer(dynamic data) async {
+    WorldData world = WorldData(data);
 
-class DoorData {
-  int x; int y;
-  String imageFile;
-  int width; int height;
-  ui.Image? image;
-  
-  DoorData(dynamic doorData)
-  : x = doorData['x'],
-    y = doorData['y'],
-    imageFile = "media/door.png",
-    width = 267,
-    height = 335;
-}
-class KeyData {
-  int x; int y; 
-  bool collected;
-  String? holderId;
-  String imageFile;
-  int width; int height;
-  ui.Image? image;
+    if (data['zonesFile'] != null) {
+      try {
+        final String zonesString = await rootBundle.loadString(
+          "assets/${data['zonesFile']}",
+        );
+        final Map<String, dynamic> zonesData = json.decode(zonesString);
+        world.addZonesFromLocalFile(zonesData);
+      } catch (e) {
+        print("⚠️ No se pudo cargar zonesFile: ${data['zonesFile']}");
+      }
+    }
 
-  KeyData(dynamic keyData)
-  : x = keyData['x'],
-    y = keyData['y'],
-    collected = keyData['collected'],
-    holderId = keyData['holderId'],
-    imageFile = "media/skeleton_key.png",
-    width = 32,
-    height = 32;
-}
-class WorldInit {
-  int width;
-  int height;
-  DoorData door;
-  KeyData key;
-
-  WorldInit(dynamic worldInit)
-  : width = worldInit['width'],
-    height = worldInit['height'],
-    door = DoorData(worldInit['door']),
-    key = KeyData(worldInit['key']);
-}
-
-class PlayerState {
-  String id;
-  double x; double y;
-  String nickname;
-  String color;
-  late String imageFile;
-  int width; int height;
-  ui.Image? image;
-
-  PlayerState(dynamic playerState)
-  : id = playerState['id'],
-    x = playerState['x'],
-    y = playerState['y'],
-    nickname = playerState['nickname'],
-    color = playerState['color'],
-    width = 112,
-    height = 186 {
-      for (int i = 0; i < colors.length; i++) {
-        if (color == colors[i]) {
-          imageFile = "media/skeleton_color${i+1}.png";
+    if (data['layers'] != null && data['layers'] is List) {
+      for (var ld in data['layers']) {
+        if (ld != null) {
+          final layer = GameLayer(ld);
+          layer.tileSheetImage = await _getOrLoadImage(
+            'assets/${layer.tilesSheetFile}',
+          );
+          await layer.loadTileMapJson();
+          world.layers.add(layer);
         }
       }
     }
-}
-class StateUpdate {
-  List<PlayerState> players;
-  KeyData key;
 
-  StateUpdate(dynamic stateUpdate)
-  : players = [
-      for (dynamic playerState in stateUpdate['players'])
-        PlayerState(playerState)
-    ],
-    key = KeyData(stateUpdate['key']);
-}
+    world.door.image = await _getOrLoadImage("assets/${world.door.imageFile}");
+    world.key.image = await _getOrLoadImage("assets/${world.key.imageFile}");
 
-
-class Loader {
-  static Future<GameLevelData> loadLevel(String levelName) async {
-    // Load game data JSON
-    final gameDataJson = await rootBundle.loadString('assets/game_data.json');
-    final gameData = jsonDecode(gameDataJson);
-
-    // Get the first level (you can add logic to select specific levels)
-    final levelData = gameData['levels'][0];
-
-    // Load layers
-    final layers = <GameLayer>[];
-    for (final layerData in levelData['layers']) {
-      final layer = GameLayer(
-        name: layerData['name'],
-        tilesSheetFile: layerData['tilesSheetFile'],
-        tileMapFile: layerData['tileMapFile'],
-        tilesWidth: layerData['tilesWidth'],
-        tilesHeight: layerData['tilesHeight'],
-        x: layerData['x'],
-        y: layerData['y'],
-        visible: layerData['visible'],
-      );
-
-      // Load tilemap JSON
-      final tileMapJson =
-          await rootBundle.loadString('assets/${layer.tileMapFile}');
-      final tileMapData = jsonDecode(tileMapJson);
-      layer.tileMap = List<List<int>>.from(
-        tileMapData['tileMap'].map((row) => List<int>.from(row)),
-      );
-
-      // Load tileset image
-      layer.tileSheetImage = await _loadImage('assets/${layer.tilesSheetFile}');
-
-      layers.add(layer);
-    }
-
-    return GameLevelData(
-      name: levelData['name'],
-      layers: layers,
-      viewportWidth: levelData['viewportWidth'],
-      viewportHeight: levelData['viewportHeight'],
-      backgroundColorHex: levelData['backgroundColorHex'],
-    );
-  }
-
-  static Future<WorldInit> loadWorldInit(dynamic data) async {
-    WorldInit worldInit = WorldInit(data);
-    worldInit.door.image = await _loadImage("assets/${worldInit.door.imageFile}");
-    worldInit.key.image = await _loadImage("assets/${worldInit.key.imageFile}");
-    return worldInit;
+    return world;
   }
 
   static Future<StateUpdate> loadStateUpdate(dynamic data) async {
-    StateUpdate stateUpdate = StateUpdate(data);
-    for (PlayerState player in stateUpdate.players) {
-      player.image = await _loadImage("assets/${player.imageFile}");
+    StateUpdate state = StateUpdate(data);
+    for (var p in state.players) {
+      p.image = await _getOrLoadImage("assets/${p.imageFile}");
     }
-    stateUpdate.key.image = await _loadImage("assets/${stateUpdate.key.imageFile}");
-    return stateUpdate;
-  }
-
-  static Future<ui.Image> _loadImage(String assetPath) async {
-    final data = await rootBundle.load(assetPath);
-    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-    final frame = await codec.getNextFrame();
-    return frame.image;
+    state.key.image = await _getOrLoadImage("assets/media/skeleton_key.png");
+    return state;
   }
 }
 
+// --- MODELOS DE DATOS ---
+
+class WorldData {
+  final String name;
+  final int width, height;
+  final String backgroundColorHex;
+  late DoorData door;
+  late KeyData key;
+
+  // Listas de colisiones y física
+  List<Rect> obstacles = [];
+  List<Rect> platforms = [];
+  List<Rect> hazards = [];
+  List<Offset> spawns = [];
+
+  Map<String, dynamic>? palanca;
+  Map<String, dynamic>? platform;
+  List<GameLayer> layers = [];
+
+  WorldData(dynamic d)
+    : name = d['name'] ?? "Nivel",
+      width = d['width'] ?? 1500,
+      height = d['height'] ?? 800,
+      backgroundColorHex = d['backgroundColorHex'] ?? "#1a1a1a" {
+    // Reinicio de listas
+    layers = [];
+    obstacles = [];
+    platforms = [];
+    hazards = [];
+    spawns = [];
+
+    door = DoorData(d['door']);
+    key = KeyData(d['key']);
+
+    palanca = d['palanca'] != null
+        ? Map<String, dynamic>.from(d['palanca'])
+        : null;
+    platform = d['platform'] != null
+        ? Map<String, dynamic>.from(d['platform'])
+        : null;
+  }
+
+  /// ESTE MÉTODO DEBE ESTAR DENTRO DE WORLDDATA
+  void addZonesFromLocalFile(Map<String, dynamic> zonesData) {
+    if (zonesData['zones'] == null) return;
+    for (var z in zonesData['zones']) {
+      final rect = Rect.fromLTWH(
+        (z['x'] as num).toDouble(),
+        (z['y'] as num).toDouble(),
+        (z['width'] as num).toDouble(),
+        (z['height'] as num).toDouble(),
+      );
+
+      switch (z['type']) {
+        case "Default":
+          obstacles.add(rect);
+          break;
+        case "plataforma":
+          platforms.add(rect);
+          obstacles.add(rect);
+          break;
+        case "precipicio":
+          hazards.add(rect);
+          break;
+        case "spawn":
+          spawns.add(Offset(rect.left, rect.top));
+          break;
+      }
+    }
+  }
+}
+
+class GameLayer {
+  final String tilesSheetFile;
+  final String? tileMapFile;
+  final int tilesWidth, tilesHeight;
+  List<List<int>> tileMap = [];
+  ui.Image? tileSheetImage;
+
+  GameLayer(dynamic d)
+    : tilesSheetFile = d['tilesSheetFile'] ?? "media/TileSetMap_Png.png",
+      tileMapFile = d['tileMapFile'],
+      tilesWidth = d['tilesWidth'] ?? 16,
+      tilesHeight = d['tilesHeight'] ?? 16;
+
+  Future<void> loadTileMapJson() async {
+    if (tileMapFile == null) return;
+    try {
+      final String data = await rootBundle.loadString("assets/$tileMapFile");
+      final Map<String, dynamic> jsonMap = json.decode(data);
+      var rawMap = jsonMap['map'] ?? jsonMap['tileMap'];
+      if (rawMap != null) {
+        tileMap = (rawMap as List).map((row) => List<int>.from(row)).toList();
+      }
+    } catch (e) {
+      print("❌ Error cargando tilemap local $tileMapFile: $e");
+    }
+  }
+}
+
+class DoorData {
+  final double x, y;
+  final int width, height;
+  final String imageFile = "media/door.png";
+  ui.Image? image;
+
+  DoorData(dynamic d)
+    : x = (d['x'] as num?)?.toDouble() ?? 0.0,
+      y = (d['y'] as num?)?.toDouble() ?? 0.0,
+      width = 267,
+      height = 335;
+}
+
+class KeyData {
+  final double x, y;
+  final int width, height;
+  final bool collected;
+  final String imageFile = "media/skeleton_key.png";
+  ui.Image? image;
+
+  KeyData(dynamic d)
+    : x = (d['x'] as num?)?.toDouble() ?? 0.0,
+      y = (d['y'] as num?)?.toDouble() ?? 0.0,
+      collected = d['collected'] ?? false,
+      width = 32,
+      height = 32;
+}
+
+class PlayerState {
+  final String id, nickname, color;
+  final double x, y;
+  final int width = 112, height = 186;
+  late String imageFile;
+  ui.Image? image;
+
+  PlayerState(dynamic p)
+    : id = p['id'].toString(),
+      x = (p['x'] as num).toDouble(),
+      y = (p['y'] as num).toDouble(),
+      nickname = p['nickname'] ?? "Player",
+      color = p['color'] ?? "rojo" {
+    final Map<String, String> skinMap = {
+      'rojo': 'skeleton_color1.png',
+      'azul': 'skeleton_color2.png',
+      'verde': 'skeleton_color3.png',
+      'amarillo': 'skeleton_color4.png',
+      'rosa': 'skeleton_color5.png',
+      'naranja': 'skeleton_color6.png',
+      'morado': 'skeleton_color7.png',
+      'cian': 'skeleton_color8.png',
+    };
+    String fileName = skinMap[color.toLowerCase()] ?? 'skeleton_color1.png';
+    imageFile = "media/$fileName";
+  }
+}
+
+class StateUpdate {
+  final List<PlayerState> players;
+  late KeyData key;
+  Map<String, dynamic>? palancaUpdate;
+
+  StateUpdate(dynamic d)
+    : players = (d['players'] as List).map((p) => PlayerState(p)).toList() {
+    key = KeyData(d['key']);
+    if (d['palanca'] != null) {
+      palancaUpdate = Map<String, dynamic>.from(d['palanca']);
+    }
+  }
+}

@@ -1,163 +1,136 @@
 import 'dart:convert';
-import 'dart:io';
-
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'game_loader.dart';
 import 'game_painter.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(
+  const MaterialApp(debugShowCheckedModeBanner: false, home: GameScreen()),
+);
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'IETI Park',
-      theme: ThemeData(
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'IETI Park'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
+class GameScreen extends StatefulWidget {
+  const GameScreen({super.key});
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<GameScreen> createState() => _GameScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  late WebSocketChannel channel;
-  late Future<GameLevelData> _gameDataFuture;
-  final double gameWidth = 890;
-  final double gameHeight = 540;
-  WorldInit? _worldInitData;
-  StateUpdate? _stateUpdateData;
+class _GameScreenState extends State<GameScreen> {
+  WebSocketChannel? channel;
+  WorldData? _worldData;
+  StateUpdate? _stateUpdate;
 
   @override
   void initState() {
     super.initState();
-    _initializeConnection();
-    _gameDataFuture = Loader.loadLevel('level_000');
+    _connect();
   }
 
-  void _initializeConnection() {
-    //channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
-    channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443')); 
-    
-    // Listen to stream immediately
-    channel.stream.listen(
-      (data) async {
-        try {
-          final message = jsonDecode(data);
-          if (message['type'] == 'WORLD_INIT') {
-            final worldInit = await Loader.loadWorldInit(message['data']);
-            setState(() {
-              _worldInitData = worldInit;
+  Future<void> _openQR() async {
+    final url = Uri.parse('https://piko4.ieti.site/descarga');
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      print("No se pudo abrir la URL");
+    }
+  }
+
+  void _connect() {
+    // Conexión al servidor
+    channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443'));
+
+    channel!.stream.listen((raw) {
+      try {
+        final msg = jsonDecode(raw);
+        final data = msg['data'];
+
+        switch (msg['type']) {
+          case 'WORLD_INIT':
+            Loader.loadWorldFromServer(data).then((w) {
+              setState(() => _worldData = w);
             });
-            print("✓ WORLD_INIT received and initialized");
-          } else if (message['type'] == 'STATE_UPDATE') {
-            final stateUpdate = await Loader.loadStateUpdate(message['data']);
-            setState(() {
-              _stateUpdateData = stateUpdate;
+            break;
+          case 'STATE_UPDATE':
+            if (_worldData != null) {
+              Loader.loadStateUpdate(data).then((s) {
+                setState(() => _stateUpdate = s);
+              });
+            }
+            break;
+          case 'CHANGE_LEVEL':
+            // Limpiamos el mundo actual para forzar el redibujado del nuevo
+            setState(() => _worldData = null);
+            Loader.loadWorldFromServer(data['world']).then((w) {
+              setState(() {
+                _worldData = w;
+                _stateUpdate = null;
+              });
             });
-            print("✓ STATE_UPDATE received and initialized");
-          } else {
-            print("📨 Server message type: ${message['type']} \n ${message['data']}");
-            setState(() {
-            });
-          }
-        } catch (e) {
-          print("❌ Error parsing server data: $e");
+            break;
+          case 'GAME_OVER':
+            _showEndDialog(data['message'] ?? "¡HAS ESCAPADO!");
+            break;
         }
-      },
-      onError: (error) {
-        print("❌ WebSocket error: $error");
-      },
-      onDone: () {
-        print("⚠️ WebSocket connection closed");
-      },
-    );
-    
-    // Send JOIN_VIEWER after a brief delay to ensure connection is ready
-    Future.delayed(const Duration(milliseconds: 100), () {
-      channel.sink.add(jsonEncode({
-        'type': 'JOIN_VIEWER',
-      }));
-      print("📤 Sent JOIN_VIEWER to server");
+      } catch (e) {
+        print("Error procesando mensaje: $e");
+      }
+    }, onError: (err) => print("Connection error: $err"));
+
+    // Notificar al servidor que somos un visor
+    Future.delayed(const Duration(milliseconds: 500), () {
+      channel!.sink.add(jsonEncode({'type': 'JOIN_VIEWER'}));
     });
+  }
+
+  // --- FUNCIÓN QUE FALTABA ---
+  void _showEndDialog(String text) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black87,
+        title: const Text("FIN PARTIDA", style: TextStyle(color: Colors.white)),
+        content: Text(text, style: const TextStyle(color: Colors.white)),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Opcional: podrías reiniciar la conexión aquí
+            },
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   void dispose() {
-    channel.sink.close();
+    channel?.sink.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.blueGrey,
-        title: Center(
-          child: Text(widget.title,
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-        ),
+      // Fondo negro para que no haya bordes blancos si la pantalla es muy ancha
+      backgroundColor: Colors.black,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openQR,
+        child: const Icon(Icons.qr_code),
       ),
-      body: Center(
-        child: Row(
-          mainAxisAlignment: .center,
-          children: [
-            //Padding(
-            //  padding: EdgeInsetsGeometry.all(10),
-            //  child: Column(
-            //    mainAxisAlignment: .center,
-            //    children: [
-            //      Text("Baixa't l'app!\nQR:", style: TextStyle(fontSize: 18)),
-            //      //QrImageView(
-            //      //  data: ""
-            //      //  )
-            //    ]
-            //  ),
-            //),
-            Container(
-              width: gameWidth,
-              height: gameHeight,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black, width: 10),
-              ),
-              child: FutureBuilder<GameLevelData>(
-                future: _gameDataFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    final gameData = snapshot.data!;
-                    return CustomPaint(
-                      painter: GamePainter(gameData, _worldInitData, _stateUpdateData),
-                      size: Size(gameWidth, gameHeight),
-                    );
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Text('Error loading game data: ${snapshot.error}'),
-                    );
-                  } else {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+      body: _worldData == null
+          ? const Center(child: CircularProgressIndicator())
+          : SizedBox.expand(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return CustomPaint(
+                    // Enviamos el tamaño real de la ventana de Linux/Web al Painter
+                    size: Size(constraints.maxWidth, constraints.maxHeight),
+                    painter: GamePainter(_worldData, _stateUpdate),
+                  );
                 },
               ),
             ),
-          ]
-        )
-      ),
     );
   }
 }
