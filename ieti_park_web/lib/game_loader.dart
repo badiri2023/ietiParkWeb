@@ -44,7 +44,7 @@ class GameLevelData {
 }
 
 class DoorData {
-  int x; int y;
+  int x; int y; bool opened;
   String imageFile;
   int width; int height;
   ui.Image? image;
@@ -52,9 +52,10 @@ class DoorData {
   DoorData(dynamic doorData)
   : x = doorData['x'],
     y = doorData['y'],
+    opened = doorData['opened'],
     imageFile = "media/door.png",
     width = 267,
-    height = 335;
+    height = 310;
 }
 class KeyData {
   int x; int y; 
@@ -86,6 +87,33 @@ class WorldInit {
     key = KeyData(worldInit['key']);
 }
 
+class LeverData {
+  int x; int y; bool activated;
+  String imageFile;
+  int width; int height;
+  ui.Image? image;
+
+  LeverData(dynamic leverData)
+  : x = leverData['x'],
+    y = leverData['y'],
+    activated = leverData['activated'],
+    imageFile = "media/assets_dungeon.png",
+    width = 32,
+    height = 32;
+}
+class PlatformData {
+  int x; int y;
+  String imageFile;
+  int width; int height;
+  ui.Image? image;
+
+  PlatformData(dynamic platformData)
+  : x = platformData['x'],
+    y = platformData['y'],
+    width = platformData['width'],
+    height = platformData['height'],
+    imageFile = "media/TileSetMap_Png.png";
+}
 class PlayerState {
   String id;
   double x; double y;
@@ -112,6 +140,9 @@ class PlayerState {
 }
 class StateUpdate {
   List<PlayerState> players;
+  DoorData door;
+  LeverData lever;
+  PlatformData platform;
   KeyData key;
 
   StateUpdate(dynamic stateUpdate)
@@ -119,18 +150,20 @@ class StateUpdate {
       for (dynamic playerState in stateUpdate['players'])
         PlayerState(playerState)
     ],
+    door = DoorData(stateUpdate['door']),
+    lever = LeverData(stateUpdate['lever']),
+    platform = PlatformData(stateUpdate['platform']),
     key = KeyData(stateUpdate['key']);
 }
 
 
 class Loader {
-  static Future<GameLevelData> loadLevel(String levelName) async {
+  static Future<GameLevelData> loadLevel(int levelIndex) async {
     // Load game data JSON
     final gameDataJson = await rootBundle.loadString('assets/game_data.json');
     final gameData = jsonDecode(gameDataJson);
 
-    // Get the first level (you can add logic to select specific levels)
-    final levelData = gameData['levels'][0];
+    final levelData = gameData['levels'][levelIndex];
 
     // Load layers
     final layers = <GameLayer>[];
@@ -181,7 +214,10 @@ class Loader {
     for (PlayerState player in stateUpdate.players) {
       player.image = await _loadImage("assets/${player.imageFile}");
     }
+    stateUpdate.door.image = await _loadImage("assets/${stateUpdate.door.imageFile}");
+    stateUpdate.lever.image = await _loadImage("assets/${stateUpdate.lever.imageFile}");
     stateUpdate.key.image = await _loadImage("assets/${stateUpdate.key.imageFile}");
+    stateUpdate.platform.image = await _loadImage("assets/${stateUpdate.platform.imageFile}");
     return stateUpdate;
   }
 

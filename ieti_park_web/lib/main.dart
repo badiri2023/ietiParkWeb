@@ -39,8 +39,6 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   late WebSocketChannel channel;
   late Future<GameLevelData> _gameDataFuture;
-  final double gameWidth = 890;
-  final double gameHeight = 540;
   WorldInit? _worldInitData;
   StateUpdate? _stateUpdateData;
 
@@ -48,12 +46,12 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _initializeConnection();
-    _gameDataFuture = Loader.loadLevel('level_000');
+    _gameDataFuture = Loader.loadLevel(0);
   }
 
   void _initializeConnection() {
-    //channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
-    channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443')); 
+    channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
+    //channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443')); 
     
     // Listen to stream immediately
     channel.stream.listen(
@@ -65,17 +63,17 @@ class _MyHomePageState extends State<MyHomePage> {
             setState(() {
               _worldInitData = worldInit;
             });
-            print("✓ WORLD_INIT received and initialized");
+            print("✓ WORLD_INIT received and initialized:\n    ${message['data']}");
           } else if (message['type'] == 'STATE_UPDATE') {
             final stateUpdate = await Loader.loadStateUpdate(message['data']);
             setState(() {
               _stateUpdateData = stateUpdate;
             });
-            print("✓ STATE_UPDATE received and initialized");
+            print("✓ STATE_UPDATE received and initialized:\n    ${message['data']}");
+          } else if (message['type'] == 'CHANGE_LEVEL') {
+            _gameDataFuture = Loader.loadLevel(1);
           } else {
-            print("📨 Server message type: ${message['type']} \n ${message['data']}");
-            setState(() {
-            });
+            print("⚠️ Unknown message type: ${message['type']}");
           }
         } catch (e) {
           print("❌ Error parsing server data: $e");
@@ -106,6 +104,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    const appBarHeight = 80.0;
+    const padding = 10.0;
+    final availableHeight = screenHeight - appBarHeight - (padding * 2);
+
+    final gameHeight = availableHeight;
+    final gameWidth = (gameHeight * 15 / 9) - 10;
+    
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blueGrey,
@@ -118,18 +126,6 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Row(
           mainAxisAlignment: .center,
           children: [
-            //Padding(
-            //  padding: EdgeInsetsGeometry.all(10),
-            //  child: Column(
-            //    mainAxisAlignment: .center,
-            //    children: [
-            //      Text("Baixa't l'app!\nQR:", style: TextStyle(fontSize: 18)),
-            //      //QrImageView(
-            //      //  data: ""
-            //      //  )
-            //    ]
-            //  ),
-            //),
             Container(
               width: gameWidth,
               height: gameHeight,

@@ -7,6 +7,7 @@ class GamePainter extends CustomPainter {
   WorldInit? worldInitData;
   StateUpdate? stateUpdateData;
   late double scale;
+  int doorAnimationFrame = 0;
 
   GamePainter(this.gameData, this.worldInitData, this.stateUpdateData);
 
@@ -28,11 +29,13 @@ class GamePainter extends CustomPainter {
 
     // Handle server messages - only draw if data is initialized
     if (worldInitData != null) {
-      _drawDoor(canvas, size, null);
+      _drawDoor(canvas, size, worldInitData!.door);
       _drawKey(canvas, size, worldInitData!);
     }
     if (stateUpdateData != null) {
       _drawPlayers(canvas, size, null, null);
+      _drawDoor(canvas, size, stateUpdateData!.door);
+      _drawLever(canvas, size, stateUpdateData!.lever);
     }
 
   }
@@ -82,27 +85,37 @@ class GamePainter extends CustomPainter {
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 
-  void _drawDoor(Canvas canvas, Size canvasSize, int? animationFrame) {
+  void _drawDoor(Canvas canvas, Size canvasSize, DoorData door) {
     scale = canvasSize.width / worldInitData!.width;
-    int offsetX = -40;
-    int offsetY = 155;
-    double doorScaleX = 0.6;
-    double doorScaleY = 0.75; 
-    DoorData door = worldInitData!.door;
+    int offsetX = 575;
+    int offsetY = 220;
+    double doorScaleX = 0.8;
+    double doorScaleY = 1; 
 
     // draw the door closed (first sprite)
-    if (animationFrame == null) {
+    if (door.opened == false) {
       canvas.drawImageRect(
         door.image!,
         Rect.fromLTWH(0, 0, door.width.toDouble(), door.height.toDouble()),
         Rect.fromLTWH(
-          door.x*scale + offsetX, door.y*scale + offsetY, 
+          (door.x + offsetX) * scale, (door.y + offsetY) * scale, 
           door.width*scale*doorScaleX, door.height*scale*doorScaleY
         ),
         Paint()
       );
     } else {
-      // TODO animar
+      if (doorAnimationFrame < 5) {
+        doorAnimationFrame++;
+      }
+      canvas.drawImageRect(
+        door.image!,
+        Rect.fromLTWH(door.width.toDouble()*doorAnimationFrame, 0, door.width.toDouble(), door.height.toDouble()),
+        Rect.fromLTWH(
+          (door.x + offsetX) * scale, (door.y + offsetY) * scale, 
+          door.width*scale*doorScaleX, door.height*scale*doorScaleY
+        ),
+        Paint()
+      );
     }
   }
   
@@ -142,10 +155,35 @@ class GamePainter extends CustomPainter {
     );
   }
 
+  void _drawLever(Canvas canvas, Size canvasSize, LeverData lever) {
+    scale = canvasSize.width / worldInitData!.width;
+    double width = lever.width.toDouble(); 
+    double height = lever.height.toDouble();
+    if (lever.activated == false) {
+      canvas.drawImageRect(
+        lever.image!,
+        Rect.fromLTWH(width, height, width, height),
+        Rect.fromLTWH(
+          lever.x*scale, lever.y*scale,
+          width*scale, height*scale
+        ),
+        Paint()
+      );
+    } else {           
+      canvas.drawImageRect(
+        lever.image!,
+        Rect.fromLTWH(0, height, width, height),
+        Rect.fromLTWH(
+          lever.x*scale, lever.y*scale,
+          lever.width*scale, lever.height*scale
+        ),
+        Paint()
+      );
+    }
+  }
+
   @override
   bool shouldRepaint(GamePainter oldDelegate) {
-    // Always repaint since state data may have been updated
-    // (even if the reference is the same, the contents may have changed)
     return true;
   }
 }
