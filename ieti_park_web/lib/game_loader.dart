@@ -144,6 +144,8 @@ class StateUpdate {
   LeverData? lever;
   PlatformData? platform;
   KeyData key;
+  int worldWidth;
+  int worldHeight;
 
   StateUpdate(dynamic stateUpdate)
   : players = [
@@ -153,7 +155,9 @@ class StateUpdate {
     door = DoorData(stateUpdate['door']),
     lever = stateUpdate['palanca'] != null ? LeverData(stateUpdate['palanca']) : null,
     platform = stateUpdate['plataformaActivable'] != null ? PlatformData(stateUpdate['plataformaActivable']) : null,
-    key = KeyData(stateUpdate['key']);
+    key = KeyData(stateUpdate['key']),
+    worldWidth = stateUpdate['width'] ?? 800,
+    worldHeight = stateUpdate['height'] ?? 600;
 }
 
 

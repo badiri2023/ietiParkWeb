@@ -92,7 +92,8 @@ class GamePainter extends CustomPainter {
   }
 
   void _drawDoor(Canvas canvas, Size canvasSize, DoorData door) {
-    scale = canvasSize.width / worldInitData!.width;
+    final worldWidth = stateUpdateData?.worldWidth ?? worldInitData?.width ?? 800;
+    scale = canvasSize.width / worldWidth;
     int offsetX = 575;
     int offsetY = 220;
     double doorScaleX = 0.8;
@@ -126,7 +127,8 @@ class GamePainter extends CustomPainter {
   }
   
   void _drawPlayers(Canvas canvas, Size canvasSize, int? animation, int? animationFrame) {
-    scale = canvasSize.width / worldInitData!.width;
+    final worldWidth = stateUpdateData?.worldWidth ?? worldInitData?.width ?? 800;
+    scale = canvasSize.width / worldWidth;
     
     for (PlayerState player in stateUpdateData!.players) {
       // draw player standing
@@ -147,7 +149,8 @@ class GamePainter extends CustomPainter {
   }
 
   void _drawKey(Canvas canvas, Size canvasSize, dynamic data) {
-    scale = canvasSize.width / worldInitData!.width;
+    final worldWidth = stateUpdateData?.worldWidth ?? worldInitData?.width ?? 800;
+    scale = canvasSize.width / worldWidth;
     KeyData key = data.key;
     
     canvas.drawImageRect(
@@ -162,7 +165,8 @@ class GamePainter extends CustomPainter {
   }
 
   void _drawLever(Canvas canvas, Size canvasSize, LeverData lever) {
-    scale = canvasSize.width / worldInitData!.width;
+    final worldWidth = stateUpdateData?.worldWidth ?? worldInitData?.width ?? 800;
+    scale = canvasSize.width / worldWidth;
     double width = lever.width.toDouble(); 
     double height = lever.height.toDouble();
     if (lever.activated == false) {
@@ -181,7 +185,7 @@ class GamePainter extends CustomPainter {
         Rect.fromLTWH(0, height, width, height),
         Rect.fromLTWH(
           lever.x*scale, lever.y*scale,
-          lever.width*scale, lever.height*scale
+          width*scale, height*scale
         ),
         Paint()
       );
@@ -189,7 +193,8 @@ class GamePainter extends CustomPainter {
   }
 
   void _drawPlatform(Canvas canvas, Size canvasSize, PlatformData platform) {
-    scale = canvasSize.width / worldInitData!.width;
+    final worldWidth = stateUpdateData?.worldWidth ?? worldInitData?.width ?? 800;
+    scale = canvasSize.width / worldWidth;
     double width = platform.width.toDouble();
     double height = platform.height.toDouble();
 
