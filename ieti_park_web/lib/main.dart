@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'IETI Park'),
+      home: const MyHomePage(title: 'Spooky Park'),
     );
   }
 }
@@ -117,6 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final gameWidth = (gameHeight * 15 / 9) - 10;
     
     return Scaffold(
+      backgroundColor: Color.fromARGB(255, 34, 0, 51),
       appBar: AppBar(
         backgroundColor: Colors.blueGrey,
         title: Center(
