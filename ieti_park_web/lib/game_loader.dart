@@ -44,21 +44,21 @@ class GameLevelData {
 }
 
 class DoorData {
-  int x; int y; bool opened;
+  double x; double y; bool opened;
   String imageFile;
   int width; int height;
   ui.Image? image;
   
   DoorData(dynamic doorData)
-  : x = doorData['x'],
-    y = doorData['y'],
+  : x = (doorData['x'] as num).toDouble(),
+    y = (doorData['y'] as num).toDouble(),
     opened = doorData['opened'],
     imageFile = "media/door.png",
     width = 267,
     height = 310;
 }
 class KeyData {
-  int x; int y; 
+  double x; double y; 
   bool collected;
   String? holderId;
   String imageFile;
@@ -66,8 +66,8 @@ class KeyData {
   ui.Image? image;
 
   KeyData(dynamic keyData)
-  : x = keyData['x'],
-    y = keyData['y'],
+  : x = (keyData['x'] as num).toDouble(),
+    y = (keyData['y'] as num).toDouble(),
     collected = keyData['collected'],
     holderId = keyData['holderId'],
     imageFile = "media/skeleton_key.png",
@@ -88,28 +88,28 @@ class WorldInit {
 }
 
 class LeverData {
-  int x; int y; bool activated;
+  double x; double y; bool activated;
   String imageFile;
   int width; int height;
   ui.Image? image;
 
   LeverData(dynamic leverData)
-  : x = leverData['x'],
-    y = leverData['y'],
+  : x = (leverData['x'] as num).toDouble(),
+    y = (leverData['y'] as num).toDouble(),
     activated = leverData['activated'],
     imageFile = "media/assets_dungeon.png",
     width = 32,
     height = 32;
 }
 class PlatformData {
-  int x; int y;
+  double x; double y;
   String imageFile;
   int width; int height;
   ui.Image? image;
 
   PlatformData(dynamic platformData)
-  : x = platformData['x'],
-    y = platformData['y'],
+  : x = (platformData['x'] as num).toDouble(),
+    y = (platformData['y'] as num).toDouble(),
     width = platformData['width'],
     height = platformData['height'],
     imageFile = "media/TileSetMap_Png.png";
@@ -125,8 +125,8 @@ class PlayerState {
 
   PlayerState(dynamic playerState)
   : id = playerState['id'],
-    x = playerState['x'],
-    y = playerState['y'],
+    x = (playerState['x'] as num).toDouble(),
+    y = (playerState['y'] as num).toDouble(),
     nickname = playerState['nickname'],
     color = playerState['color'],
     width = 112,
@@ -141,8 +141,8 @@ class PlayerState {
 class StateUpdate {
   List<PlayerState> players;
   DoorData door;
-  LeverData lever;
-  PlatformData platform;
+  LeverData? lever;
+  PlatformData? platform;
   KeyData key;
 
   StateUpdate(dynamic stateUpdate)
@@ -151,8 +151,8 @@ class StateUpdate {
         PlayerState(playerState)
     ],
     door = DoorData(stateUpdate['door']),
-    lever = LeverData(stateUpdate['lever']),
-    platform = PlatformData(stateUpdate['platform']),
+    lever = stateUpdate['palanca'] != null ? LeverData(stateUpdate['palanca']) : null,
+    platform = stateUpdate['plataformaActivable'] != null ? PlatformData(stateUpdate['plataformaActivable']) : null,
     key = KeyData(stateUpdate['key']);
 }
 
@@ -215,9 +215,13 @@ class Loader {
       player.image = await _loadImage("assets/${player.imageFile}");
     }
     stateUpdate.door.image = await _loadImage("assets/${stateUpdate.door.imageFile}");
-    stateUpdate.lever.image = await _loadImage("assets/${stateUpdate.lever.imageFile}");
+    if (stateUpdate.lever != null) {
+      stateUpdate.lever!.image = await _loadImage("assets/${stateUpdate.lever!.imageFile}");
+    }
     stateUpdate.key.image = await _loadImage("assets/${stateUpdate.key.imageFile}");
-    stateUpdate.platform.image = await _loadImage("assets/${stateUpdate.platform.imageFile}");
+    if (stateUpdate.platform != null) {
+      stateUpdate.platform!.image = await _loadImage("assets/${stateUpdate.platform!.imageFile}");
+    }
     return stateUpdate;
   }
 

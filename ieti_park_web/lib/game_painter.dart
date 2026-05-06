@@ -35,7 +35,13 @@ class GamePainter extends CustomPainter {
     if (stateUpdateData != null) {
       _drawPlayers(canvas, size, null, null);
       _drawDoor(canvas, size, stateUpdateData!.door);
-      _drawLever(canvas, size, stateUpdateData!.lever);
+      _drawKey(canvas, size, stateUpdateData!.key);
+      if (stateUpdateData!.lever != null) {
+        _drawLever(canvas, size, stateUpdateData!.lever!);
+      }
+      if (stateUpdateData!.platform != null) {
+        _drawPlatform(canvas, size, stateUpdateData!.platform!);
+      }
     }
 
   }
@@ -180,6 +186,22 @@ class GamePainter extends CustomPainter {
         Paint()
       );
     }
+  }
+
+  void _drawPlatform(Canvas canvas, Size canvasSize, PlatformData platform) {
+    scale = canvasSize.width / worldInitData!.width;
+    double width = platform.width.toDouble();
+    double height = platform.height.toDouble();
+
+    canvas.drawImageRect(
+      platform.image!,
+      Rect.fromLTWH(width, height*6, width, height),
+      Rect.fromLTWH(
+        platform.x*scale, platform.y*scale,
+        platform.width*scale, platform.height*scale
+      ),
+      Paint()
+    );
   }
 
   @override

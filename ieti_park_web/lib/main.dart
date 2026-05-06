@@ -50,8 +50,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _initializeConnection() {
-    channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
-    //channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443')); 
+    //channel = WebSocketChannel.connect(Uri.parse('ws://localhost:3000'));
+    channel = WebSocketChannel.connect(Uri.parse('wss://pico4.ieti.site:443')); 
     
     // Listen to stream immediately
     channel.stream.listen(
@@ -76,6 +76,8 @@ class _MyHomePageState extends State<MyHomePage> {
             print("⚠️ Unknown message type: ${message['type']}");
           }
         } catch (e) {
+          final message = jsonDecode(data);
+          print("Data: ${message['data']}");
           print("❌ Error parsing server data: $e");
         }
       },
